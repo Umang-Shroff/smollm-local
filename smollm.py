@@ -22,7 +22,7 @@ def start_ollama_server():
 
 def stop_ollama_server(process):
     # Stop the Ollama server
-    print("Terminating Ollama server...")
+    print("\nTerminating Ollama server...")
     process.terminate()
     process.wait()
     
@@ -45,7 +45,7 @@ def invoke_model():
 
 def handle_conversation(model):
     context=""
-    print("WECOME to SystemLLM! Type 'exit' to quit.")
+    print("\nWECOME to SystemLLM! Type 'exit' to quit.")
     while True:
         user_input = input("You: ")
         if user_input.lower() == "exit":
