@@ -12,8 +12,20 @@ def stop_ollama_server(process):
     print("Terminating Ollama server...")
     process.terminate()
     process.wait()
+    
+def invoke_model(input_text):
+    ollama_process = start_ollama_server()
+    
+    # Allow some time for the server to initialize
+    time.sleep(5)
+    
+    model = OllamaLLM(model="smollm")
+    result = model.invoke(input=input_text)
+    
+    stop_ollama_server(ollama_process)
+    return result
 
 input_text = "Hello world"
-result = start_ollama_server()
+result = invoke_model(input_text)
 
 print(result)
