@@ -37,11 +37,11 @@ def invoke_model():
     chain = prompt | model
     
     final_context=handle_conversation(chain)
-    result = chain.invoke({"context":final_context, "question":""})       
+    # result = chain.invoke({"context":final_context, "question":""})       
     # (input=input_text)
     
     stop_ollama_server(ollama_process)
-    return result
+    # return result
 
 def handle_conversation(model):
     context=""
