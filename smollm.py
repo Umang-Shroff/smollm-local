@@ -10,6 +10,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
 from langchain.schema import Document
 import re
+import shutil   
 import os
 
 
@@ -41,6 +42,13 @@ def stop_ollama_server(process):
     
 def load_data():
     """Load data from `data.txt` file and split it into chunks"""
+    persist_directory = "persist"
+    
+    # Remove the old persist directory to force a refresh of the vectorstore
+    if os.path.exists(persist_directory):
+        shutil.rmtree(persist_directory)
+        print(f"Removed old vectorstore in {persist_directory}")
+    
     loader = TextLoader("data.txt")
     text = loader.load()[0].page_content
 
@@ -51,7 +59,6 @@ def load_data():
     documents = [Document(page_content=chunk) for chunk in chunks]
     
     embeddings = OllamaEmbeddings(model="smollm")
-    persist_directory = "persist"
     
     # Create a Chroma vectorstore from the chunks
     vectorstore = Chroma.from_documents(documents, embeddings, persist_directory=persist_directory)
