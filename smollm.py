@@ -6,7 +6,9 @@ from langchain.indexes import VectorstoreIndexCreator
 from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import Chroma
 # from langchain_community.embeddings import OllamaEmbeddings
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
+from langchain.schema import Document
 import re
 import os
 
@@ -38,36 +40,35 @@ def stop_ollama_server(process):
     process.wait()
     
 def load_data():
-    """Load data from `data.txt` file"""
+    """Load data from `data.txt` file and split it into chunks"""
     loader = TextLoader("data.txt")
+    text = loader.load()[0].page_content
+
+    # Use CharacterTextSplitter to break the content into chunks of 500 characters
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    chunks = text_splitter.split_text(text)
+    
+    documents = [Document(page_content=chunk) for chunk in chunks]
+    
     embeddings = OllamaEmbeddings(model="smollm")
     persist_directory = "persist"
-    vectorstore = Chroma.from_documents(loader.load(), embeddings, persist_directory=persist_directory)
     
-    # query = "sample query"  # You can adjust this to test any query you like
-    # docs = vectorstore.similarity_search(query, k=5)
-    # for doc in docs:
-    #     print(doc)
+    # Create a Chroma vectorstore from the chunks
+    vectorstore = Chroma.from_documents(documents, embeddings, persist_directory=persist_directory)
     
     return vectorstore
     
 def retrieve_context(query, vectorstore):
-    """Retrieve relevant context from the data based on users question."""
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 1})
-    result = retriever.similarity_search(query, k=1)
-    if result:
-        full_content = result[0].page_content
-        # Perform a manual string search to find matches to the query
-        matched_content = perform_manual_search(query, full_content)
-        return matched_content
-    return ""
+    """Retrieve relevant context from the data based on users' question."""
+    # Perform similarity search to get the top k relevant documents
+    docs = vectorstore.similarity_search(query, k=1)  # You can adjust k to get more context if necessary
+    if docs:
+        # Extract the most relevant document's content
+        context = docs[0].page_content
+        return context
+    else:
+        return "No relevant context found."
     
-def perform_manual_search(query, content):
-    """Manually search within the content for matching portions based on the query."""
-    # Use regex to find occurrences of the query term in the content (case-insensitive)
-    matched_data = re.findall(r'.{0,30}' + re.escape(query) + r'.{0,30}', content, flags=re.IGNORECASE)
-    # Join and return the matched segments (with some context around the query)
-    return ' '.join(matched_data) if matched_data else "No relevant information found."
 
 def invoke_model():
     ollama_process = start_ollama_server()
