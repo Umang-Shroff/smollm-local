@@ -17,8 +17,12 @@ Answer:
 
 def start_ollama_server():
     # Start the Ollama server
-    print("Initiating Ollama server...")
-    return subprocess.Popen(["ollama", "serve"])
+    print("\nInitiating Ollama server...")
+    return subprocess.Popen(
+        ["ollama", "serve"],
+        stdout=subprocess.PIPE,   # Optionally capture standard output
+        stderr=subprocess.PIPE    # Suppress error output
+    )
 
 def stop_ollama_server(process):
     # Stop the Ollama server
@@ -45,7 +49,7 @@ def invoke_model():
 
 def handle_conversation(model):
     context=""
-    print("\nWECOME to SystemLLM! Type 'exit' to quit.")
+    print("\nWECOME to SystemLLM! Type 'exit' to quit.\n")
     while True:
         user_input = input("You: ")
         if user_input.lower() == "exit":
