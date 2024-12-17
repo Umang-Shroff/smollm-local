@@ -7,8 +7,7 @@ from langchain_community.document_loaders import TextLoader
 from langchain_community.vectorstores import Chroma
 # from langchain_community.embeddings import OllamaEmbeddings
 from langchain_ollama import OllamaEmbeddings
-
-
+import re
 import os
 
 
@@ -44,14 +43,32 @@ def load_data():
     embeddings = OllamaEmbeddings(model="smollm")
     persist_directory = "persist"
     vectorstore = Chroma.from_documents(loader.load(), embeddings, persist_directory=persist_directory)
+    
+    # query = "sample query"  # You can adjust this to test any query you like
+    # docs = vectorstore.similarity_search(query, k=5)
+    # for doc in docs:
+    #     print(doc)
+    
     return vectorstore
     
 def retrieve_context(query, vectorstore):
     """Retrieve relevant context from the data based on users question."""
     retriever = vectorstore.as_retriever(search_kwargs={"k": 1})
-    result = retriever.get_relevant_documents(query)
-    return result[0].page_content if result else ""
+    result = retriever.similarity_search(query, k=1)
+    if result:
+        full_content = result[0].page_content
+        # Perform a manual string search to find matches to the query
+        matched_content = perform_manual_search(query, full_content)
+        return matched_content
+    return ""
     
+def perform_manual_search(query, content):
+    """Manually search within the content for matching portions based on the query."""
+    # Use regex to find occurrences of the query term in the content (case-insensitive)
+    matched_data = re.findall(r'.{0,30}' + re.escape(query) + r'.{0,30}', content, flags=re.IGNORECASE)
+    # Join and return the matched segments (with some context around the query)
+    return ' '.join(matched_data) if matched_data else "No relevant information found."
+
 def invoke_model():
     ollama_process = start_ollama_server()
     
@@ -72,21 +89,21 @@ def invoke_model():
     # return result
 
 def handle_conversation(model, vectorstore):
-    context=""
-    print("\nWECOME to SystemLLM! Type 'exit' to quit.\n")
+    print("\nWELCOME to SystemLLM! Type 'exit' to quit.\n")
     while True:
         user_input = input("You: ")
         if user_input.lower() == "exit":
             break
         
+        # Retrieve the relevant context for the current question
         relevant_context = retrieve_context(user_input, vectorstore)
         
-        context += f"\nUser: {user_input}\nAI: {relevant_context}"
+        # Use the prompt with just the relevant context for the current question
+        result = model.invoke({"question": user_input, "context": relevant_context})
 
-        result = model.invoke({"context":context, "question":user_input})
         print("Bot: ", result)
-        context+= f"\nUser: {user_input}\nAI: {result}"
-    return context
+    
+    return result 
         
 result = invoke_model()
 
