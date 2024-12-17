@@ -20,8 +20,8 @@ def start_ollama_server():
     print("\nInitiating Ollama server...")
     return subprocess.Popen(
         ["ollama", "serve"],
-        stdout=subprocess.PIPE,   # Optionally capture standard output
-        stderr=subprocess.PIPE    # Suppress error output
+        stdout=subprocess.PIPE,   
+        stderr=subprocess.PIPE    
     )
 
 def stop_ollama_server(process):
