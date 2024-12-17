@@ -33,7 +33,10 @@ def invoke_model(input_text):
     time.sleep(5)
     
     model = OllamaLLM(model="smollm")
-    result = model.invoke(input=input_text)
+    prompt = ChatPromptTemplate.from_template(template)
+    chain = prompt | model
+    result = chain.invoke({"context":"", "question":input_text})       
+    # (input=input_text)
     
     stop_ollama_server(ollama_process)
     return result
